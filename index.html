@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f8bff">
+<title>Meal Calories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#e6f2ff; --bg-blob1:#9fd0ff; --bg-blob2:#c9e4ff;
+  --card:rgba(255,255,255,.82); --card-solid:#ffffff;
+  --ink:#0b2545; --muted:#5b7595; --line:rgba(47,139,255,.16);
+  --primary:#2f8bff; --primary-2:#1c5fd9; --accent:#7cc4ff; --soft:#e3f0ff;
+  --warn:#ff9a3c; --danger:#e5484d; --ok:#1db98a;
+  --shadow:0 10px 30px rgba(31,95,217,.14);
+  --radius:22px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#07152b; --bg-blob1:#12408a; --bg-blob2:#0c2a58;
+    --card:rgba(18,36,66,.82); --card-solid:#122442;
+    --ink:#e8f2ff; --muted:#8fa8c9; --line:rgba(124,196,255,.16);
+    --soft:#17305a; --shadow:0 10px 30px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{
+  font-family:'Prompt',system-ui,-apple-system,'Segoe UI',sans-serif;
+  background:var(--bg); color:var(--ink); min-height:100dvh;
+  position:relative; overflow-x:hidden;
+}
+body::before,body::after{
+  content:""; position:fixed; z-index:0; border-radius:50%; filter:blur(70px); pointer-events:none;
+}
+body::before{width:360px;height:360px;left:-120px;top:-100px;background:var(--bg-blob1);opacity:.7}
+body::after{width:320px;height:320px;right:-120px;bottom:60px;background:var(--bg-blob2);opacity:.9}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+input,select{font:inherit;color:inherit}
+.app{position:relative;z-index:1;max-width:480px;margin:0 auto;padding:18px 16px calc(120px + env(safe-area-inset-bottom))}
+
+/* header */
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--accent),var(--primary-2));box-shadow:0 6px 16px rgba(47,139,255,.4)}
+.logo svg{width:24px;height:24px;stroke:#fff}
+.brand h1{font-size:19px;margin:0;font-weight:700;letter-spacing:.2px}
+.brand small{display:block;color:var(--muted);font-size:12px;margin-top:-2px}
+.lang{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-weight:600;font-size:13px;box-shadow:var(--shadow);transition:transform .15s}
+.lang:active{transform:scale(.94)}
+
+/* cards */
+.card{background:var(--card);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+.card h2{margin:0 0 12px;font-size:16px;font-weight:600}
+.view{display:none;animation:rise .35s ease both}
+.view.active{display:block}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* hero ring */
+.hero{background:linear-gradient(145deg,#3d9bff 0%,#1c5fd9 100%);color:#fff;border:0;position:relative;overflow:hidden;padding:22px 18px 18px}
+.hero::before{content:"";position:absolute;width:220px;height:220px;border-radius:50%;right:-70px;top:-80px;background:rgba(255,255,255,.14)}
+.hero::after{content:"";position:absolute;width:160px;height:160px;border-radius:50%;left:-60px;bottom:-70px;background:rgba(255,255,255,.1)}
+.hero>*{position:relative;z-index:1}
+.hero-date{font-size:13px;opacity:.85;text-align:center;margin-bottom:6px}
+.ring-wrap{position:relative;width:200px;height:200px;margin:4px auto 6px}
+.ring-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-bg{stroke:rgba(255,255,255,.22)}
+.ring-fg{stroke:#fff;stroke-linecap:round;transition:stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1),stroke .3s}
+.ring-fg.over{stroke:#ffd08a}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-num{font-size:44px;font-weight:700;line-height:1}
+.ring-unit{font-size:13px;opacity:.85;margin-top:4px}
+.ring-goal{font-size:12px;opacity:.75;margin-top:2px}
+.remain{text-align:center;font-size:14px;font-weight:500;background:rgba(255,255,255,.18);border-radius:999px;padding:8px 14px;width:max-content;margin:6px auto 14px}
+.macros{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.macro{background:rgba(255,255,255,.16);border-radius:16px;padding:10px 6px;text-align:center}
+.macro b{display:block;font-size:17px;font-weight:600}
+.macro span{font-size:11px;opacity:.85}
+
+/* meal list */
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin:6px 4px 10px}
+.sec-head h2{margin:0;font-size:16px}
+.sec-head span{font-size:13px;color:var(--muted)}
+.meal{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);
+  border-radius:18px;padding:10px;margin-bottom:10px;box-shadow:var(--shadow);animation:rise .35s ease both}
+.thumb{width:58px;height:58px;border-radius:15px;flex:none;background:var(--soft) center/cover no-repeat;display:grid;place-items:center;font-size:26px}
+.meal-body{flex:1;min-width:0}
+.meal-name{font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meal-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.meal-items{font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kcal{text-align:right;flex:none}
+.kcal b{font-size:18px;color:var(--primary)}
+.kcal small{display:block;font-size:11px;color:var(--muted);margin-top:-2px}
+.del{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;color:var(--muted);flex:none;transition:background .15s,color .15s}
+.del:hover{background:rgba(229,72,77,.12);color:var(--danger)}
+.del svg{width:17px;height:17px}
+.empty{text-align:center;padding:30px 20px;color:var(--muted)}
+.empty .big{font-size:46px;margin-bottom:6px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 20px;border-radius:16px;font-weight:600;font-size:15px;
+  transition:transform .15s,box-shadow .15s,opacity .15s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,#46a4ff,#1c5fd9);color:#fff;box-shadow:0 8px 20px rgba(47,139,255,.4)}
+.btn-ghost{background:var(--soft);color:var(--primary-2)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn-ghost{color:var(--accent)}}
+.btn-danger{background:rgba(229,72,77,.12);color:var(--danger)}
+.btn-block{width:100%}
+.btn svg{width:20px;height:20px}
+.btn[disabled]{opacity:.5;pointer-events:none}
+
+/* add view */
+.drop{border:2px dashed var(--accent);border-radius:26px;padding:30px 18px;text-align:center;background:var(--card);transition:background .2s,border-color .2s,transform .2s}
+.drop.drag{background:var(--soft);border-color:var(--primary);transform:scale(1.01)}
+.cam-btn{width:120px;height:120px;border-radius:50%;margin:0 auto 14px;display:grid;place-items:center;
+  background:linear-gradient(145deg,#52adff,#1c5fd9);box-shadow:0 12px 30px rgba(47,139,255,.45);transition:transform .2s;position:relative}
+.cam-btn::after{content:"";position:absolute;inset:-10px;border-radius:50%;border:2px solid var(--accent);opacity:.5;animation:pulse 2s infinite}
+@keyframes pulse{0%{transform:scale(.92);opacity:.6}100%{transform:scale(1.25);opacity:0}}
+.cam-btn:active{transform:scale(.94)}
+.cam-btn svg{width:48px;height:48px;stroke:#fff}
+.drop h3{margin:0 0 4px;font-size:18px}
+.drop p{margin:0 0 16px;color:var(--muted);font-size:13px}
+.row2{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.preview{width:100%;aspect-ratio:4/3;border-radius:22px;background:var(--soft) center/cover no-repeat;margin-bottom:14px;position:relative;overflow:hidden;box-shadow:var(--shadow)}
+.scan{position:absolute;inset:0;background:linear-gradient(180deg,transparent 0,rgba(124,196,255,.55) 50%,transparent 100%);height:40%;animation:scan 1.6s ease-in-out infinite}
+@keyframes scan{0%{transform:translateY(-100%)}100%{transform:translateY(260%)}}
+.loading-text{text-align:center;font-weight:500;color:var(--primary)}
+.dots::after{content:"";animation:dots 1.4s steps(4,end) infinite}
+@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+.item-row{display:grid;grid-template-columns:1fr 92px 34px;gap:8px;margin-bottom:8px;align-items:center}
+.field{width:100%;background:var(--soft);border:1.5px solid transparent;border-radius:14px;padding:12px 14px;outline:none;transition:border-color .15s,background .15s}
+.field:focus{border-color:var(--primary);background:var(--card-solid)}
+.field.num{text-align:right}
+label.lbl{display:block;font-size:12px;color:var(--muted);margin:12px 0 6px;font-weight:500}
+.total-bar{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#3d9bff,#1c5fd9);color:#fff;border-radius:18px;padding:14px 18px;margin:12px 0}
+.total-bar b{font-size:26px}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.seg button{padding:10px 4px;border-radius:14px;background:var(--soft);font-size:13px;font-weight:500;transition:all .15s}
+.seg button.on{background:linear-gradient(135deg,#46a4ff,#1c5fd9);color:#fff;box-shadow:0 6px 14px rgba(47,139,255,.35)}
+.actions{display:flex;gap:10px;margin-top:14px}
+.actions .btn{flex:1}
+.note{font-size:12px;color:var(--muted);text-align:center;margin-top:10px}
+
+/* history */
+.datebar{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.datebar .field{flex:1;text-align:center;font-weight:500}
+.iconbtn{width:44px;height:44px;border-radius:14px;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;box-shadow:var(--shadow);flex:none}
+.iconbtn svg{width:18px;height:18px}
+.iconbtn:active{transform:scale(.94)}
+.chart{display:flex;align-items:flex-end;gap:8px;height:150px;position:relative;padding-top:14px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:6px;cursor:pointer}
+.bar-area{flex:none;height:112px;width:100%;display:flex;align-items:flex-end;position:relative}
+.bar-col span{height:18px;line-height:18px}
+.bar{width:100%;border-radius:10px 10px 4px 4px;background:linear-gradient(180deg,var(--accent),var(--primary));min-height:4px;transition:height .7s cubic-bezier(.2,.8,.2,1)}
+.bar.over{background:linear-gradient(180deg,#ffc27a,var(--warn))}
+.bar-col.sel .bar{box-shadow:0 0 0 3px rgba(47,139,255,.28)}
+.bar-col span{font-size:11px;color:var(--muted)}
+.bar-col.sel span{color:var(--primary);font-weight:600}
+.bar-val{font-size:10px;color:var(--muted);position:absolute;left:0;right:0;text-align:center;top:-14px}
+.goal-line{position:absolute;left:0;right:0;border-top:1.5px dashed var(--warn);opacity:.7;pointer-events:none}
+.legend{font-size:11px;color:var(--muted);margin-top:8px;display:flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:18px;border-top:1.5px dashed var(--warn)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:12px 14px;box-shadow:var(--shadow)}
+.stat small{color:var(--muted);font-size:12px}
+.stat b{display:block;font-size:22px;color:var(--primary)}
+
+/* settings */
+.pwd{position:relative}
+.pwd .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;display:grid;place-items:center;color:var(--muted)}
+.pwd .eye svg{width:19px;height:19px}
+.hint{font-size:12px;color:var(--muted);margin:6px 2px 0;line-height:1.5}
+.hint a{color:var(--primary)}
+.warnbox{background:rgba(255,154,60,.13);border:1px solid rgba(255,154,60,.35);color:var(--ink);border-radius:14px;padding:10px 12px;font-size:12px;line-height:1.5;margin-top:10px}
+select.field{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 20px) 52%,calc(100% - 14px) 52%;background-size:6px 6px;background-repeat:no-repeat}
+
+/* nav */
+.nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom));z-index:20;
+  width:min(456px,calc(100% - 24px));display:grid;grid-template-columns:repeat(4,1fr);gap:4px;
+  background:var(--card);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:26px;padding:8px;box-shadow:0 14px 40px rgba(31,95,217,.25)}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px;border-radius:18px;font-size:11px;color:var(--muted);font-weight:500;transition:all .2s}
+.nav button svg{width:22px;height:22px}
+.nav button.on{color:var(--primary);background:var(--soft)}
+.nav button.add{color:#fff;background:linear-gradient(135deg,#46a4ff,#1c5fd9);box-shadow:0 8px 18px rgba(47,139,255,.45);transform:translateY(-10px)}
+.nav button.add.on{color:#fff}
+.nav button.add:active{transform:translateY(-10px) scale(.95)}
+
+/* toast */
+.toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-90px);z-index:50;max-width:calc(100% - 32px);
+  background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:16px;font-size:14px;box-shadow:0 12px 30px rgba(0,0,0,.28);
+  transition:transform .35s cubic-bezier(.2,.9,.3,1.2)}
+.toast.show{transform:translate(-50%,0)}
+.toast.err{background:var(--danger);color:#fff}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3-1 4-1 6a3 3 0 0 0 6 0c0-2-1-3-2-4 3 1 6 4 6 9a9 9 0 0 1-18 0c0-3 1-5 3-7 0 2 1 3 2 3 0-3 2-5 4-7z"/></svg></div>
+      <div><h1>Meal Calories</h1><small data-i18n="tagline"></small></div>
+    </div>
+    <button class="lang" id="langBtn" aria-label="Language">TH</button>
+  </header>
+
+  <!-- TODAY -->
+  <main>
+  <section class="view active" id="view-today">
+    <div class="card hero">
+      <div class="hero-date" id="todayDate"></div>
+      <div class="ring-wrap">
+        <svg viewBox="0 0 200 200"><circle class="ring-bg" cx="100" cy="100" r="86" fill="none" stroke-width="16"/>
+          <circle class="ring-fg" id="ringFg" cx="100" cy="100" r="86" fill="none" stroke-width="16" stroke-dasharray="540.35" stroke-dashoffset="540.35"/></svg>
+        <div class="ring-center">
+          <div class="ring-num" id="ringNum">0</div>
+          <div class="ring-unit">kcal</div>
+          <div class="ring-goal" id="ringGoal"></div>
+        </div>
+      </div>
+      <div class="remain" id="remain"></div>
+      <div class="macros">
+        <div class="macro"><b id="mP">0</b><span data-i18n="protein"></span></div>
+        <div class="macro"><b id="mC">0</b><span data-i18n="carbs"></span></div>
+        <div class="macro"><b id="mF">0</b><span data-i18n="fat"></span></div>
+      </div>
+    </div>
+    <div class="sec-head"><h2 data-i18n="todayMeals"></h2><span id="mealCount"></span></div>
+    <div id="todayList"></div>
+  </section>
+
+  <!-- ADD -->
+  <section class="view" id="view-add">
+    <div id="stagePick">
+      <div class="drop" id="drop">
+        <button class="cam-btn" id="camBtn" aria-label="Take photo"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.6-2.4h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.6"/></svg></button>
+        <h3 data-i18n="snapTitle"></h3>
+        <p data-i18n="snapSub"></p>
+        <div class="row2">
+          <button class="btn btn-ghost" id="galBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.8"/><path d="m21 15-5-5L5 21"/></svg><span data-i18n="gallery"></span></button>
+          <button class="btn btn-ghost" id="manualBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span data-i18n="manual"></span></button>
+        </div>
+      </div>
+      <input type="file" id="fileCam" accept="image/*" capture="environment" hidden>
+      <input type="file" id="fileGal" accept="image/*" hidden>
+      <div class="note" id="keyNote"></div>
+    </div>
+
+    <div id="stageLoad" class="hidden">
+      <div class="preview" id="loadPreview"><div class="scan"></div></div>
+      <div class="loading-text"><span data-i18n="analyzing"></span><span class="dots"></span></div>
+      <div class="actions"><button class="btn btn-ghost" id="cancelBtn" data-i18n="cancel"></button></div>
+    </div>
+
+    <div id="stageResult" class="hidden">
+      <div class="preview hidden" id="resPreview"></div>
+      <div class="card">
+        <h2 id="resTitle"></h2>
+        <div id="itemRows"></div>
+        <button class="btn btn-ghost btn-block" id="addItemBtn">+ <span data-i18n="addItem"></span></button>
+        <div class="total-bar"><span data-i18n="total"></span><span><b id="resTotal">0</b> kcal</span></div>
+        <label class="lbl" data-i18n="mealType"></label>
+        <div class="seg" id="mealSeg"></div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="discardBtn" data-i18n="discard"></button>
+        <button class="btn btn-primary" id="saveBtn" data-i18n="save"></button>
+      </div>
+      <div class="note" data-i18n="aiNote"></div>
+    </div>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="view" id="view-history">
+    <div class="card">
+      <h2 data-i18n="last7"></h2>
+      <div class="chart" id="chart"></div>
+      <div class="legend"><i></i><span id="goalLegend"></span></div>
+    </div>
+    <div class="datebar">
+      <button class="iconbtn" id="prevDay" aria-label="Previous day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+      <input type="date" class="field" id="histDate">
+      <button class="iconbtn" id="nextDay" aria-label="Next day"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+    </div>
+    <div class="stats">
+      <div class="stat"><small data-i18n="dayTotal"></small><b id="hTotal">0</b></div>
+      <div class="stat"><small data-i18n="avg7"></small><b id="hAvg">0</b></div>
+    </div>
+    <div id="histList"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="view-settings">
+    <div class="card">
+      <h2 data-i18n="aiSettings"></h2>
+      <label class="lbl" for="apiKey">OpenAI API key</label>
+      <div class="pwd">
+        <input class="field" id="apiKey" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false">
+        <button class="eye" id="eyeBtn" aria-label="Show key"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div>
+      <div class="hint"><span data-i18n="keyHint"></span> <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com/api-keys</a></div>
+      <label class="lbl" for="modelSel" data-i18n="model"></label>
+      <select class="field" id="modelSel"><option value="gpt-4o-mini">gpt-4o-mini</option><option value="gpt-4o">gpt-4o</option></select>
+      <div class="warnbox" data-i18n="keyWarn"></div>
+    </div>
+    <div class="card">
+      <h2 data-i18n="goalSettings"></h2>
+      <label class="lbl" for="goalIn" data-i18n="goalLabel"></label>
+      <input class="field num" id="goalIn" type="number" inputmode="numeric" min="500" max="10000" step="50">
+    </div>
+    <div class="card">
+      <h2 data-i18n="dataTitle"></h2>
+      <button class="btn btn-danger btn-block" id="clearBtn" data-i18n="clearAll"></button>
+      <div class="hint" data-i18n="dataHint"></div>
+    </div>
+  </section>
+  </main>
+</div>
+
+<nav class="nav" id="nav">
+  <button data-view="today" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/></svg><span data-i18n="navToday"></span></button>
+  <button data-view="add" class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg><span data-i18n="navAdd"></span></button>
+  <button data-view="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span data-i18n="navHistory"></span></button>
+  <button data-view="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span data-i18n="navSettings"></span></button>
+</nav>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- i18n ---------- */
+const I18N = {
+  th: {
+    tagline:'บันทึกแคลอรี่ด้วยรูปถ่าย', navToday:'วันนี้', navAdd:'เพิ่ม', navHistory:'ประวัติ', navSettings:'ตั้งค่า',
+    protein:'โปรตีน (g)', carbs:'คาร์บ (g)', fat:'ไขมัน (g)', todayMeals:'อาหารวันนี้',
+    meals:n=>`${n} รายการ`, remainLeft:n=>`เหลืออีก ${n} kcal`, remainOver:n=>`เกินเป้า ${n} kcal`, goalOf:n=>`เป้าหมาย ${n}`,
+    emptyToday:'ยังไม่มีอาหารวันนี้', emptyTodaySub:'กดปุ่ม “เพิ่ม” เพื่อถ่ายรูปอาหารมื้อแรก',
+    emptyDay:'ไม่มีบันทึกในวันนี้',
+    snapTitle:'ถ่ายรูปอาหารของคุณ', snapSub:'AI จะบอกชื่อเมนูและประมาณแคลอรี่ให้',
+    gallery:'เลือกรูป', manual:'เพิ่มเอง', analyzing:'กำลังวิเคราะห์อาหาร', cancel:'ยกเลิก',
+    resFromAI:'ผลวิเคราะห์จาก AI', resManual:'เพิ่มอาหารเอง', addItem:'เพิ่มเมนู', total:'รวมทั้งหมด', mealType:'มื้อ',
+    discard:'ทิ้ง', save:'บันทึก', aiNote:'ค่าแคลอรี่เป็นการประมาณจาก AI แก้ไขได้ก่อนบันทึก',
+    mealNames:{breakfast:'เช้า', lunch:'กลางวัน', dinner:'เย็น', snack:'ของว่าง'},
+    itemName:'ชื่อเมนู', last7:'แคลอรี่ 7 วันล่าสุด', goalLegend:n=>`เป้าหมาย ${n} kcal`,
+    dayTotal:'รวมวันที่เลือก (kcal)', avg7:'เฉลี่ย 7 วัน (kcal)',
+    aiSettings:'การเชื่อมต่อ AI', keyHint:'สร้าง key ได้ที่', model:'โมเดล',
+    keyWarn:'key เก็บไว้ในเบราว์เซอร์ของคุณเท่านั้น (localStorage) และถูกส่งตรงไปที่ OpenAI เหมาะกับใช้ส่วนตัว อย่าแชร์ไฟล์นี้พร้อม key และควรตั้งวงเงินการใช้งานใน OpenAI',
+    goalSettings:'เป้าหมายรายวัน', goalLabel:'เป้าหมายแคลอรี่ (kcal ต่อวัน)',
+    dataTitle:'ข้อมูล', clearAll:'ล้างข้อมูลทั้งหมด', dataHint:'ข้อมูลทั้งหมดเก็บในเครื่องนี้เท่านั้น',
+    confirmClear:'ลบบันทึกอาหารทั้งหมด? ย้อนกลับไม่ได้', confirmDel:'ลบรายการนี้?',
+    noKeyNote:'ยังไม่ได้ตั้งค่า OpenAI API key — ไปที่ “ตั้งค่า” ก่อนใช้งาน AI',
+    toastSaved:'บันทึกแล้ว', toastDel:'ลบแล้ว', toastCleared:'ล้างข้อมูลแล้ว', toastSettings:'บันทึกการตั้งค่าแล้ว',
+    errNoKey:'กรุณาใส่ OpenAI API key ในหน้าตั้งค่าก่อน', errAuth:'API key ไม่ถูกต้องหรือหมดอายุ',
+    errRate:'เกินโควตาหรือเรียกบ่อยเกินไป ลองใหม่อีกครั้ง', errNet:'เชื่อมต่อ OpenAI ไม่ได้ ตรวจสอบอินเทอร์เน็ต',
+    errTimeout:'หมดเวลาการวิเคราะห์ ลองใหม่อีกครั้ง', errParse:'อ่านผลจาก AI ไม่ได้ ลองถ่ายรูปใหม่',
+    errImg:'เปิดรูปนี้ไม่ได้ ลองรูปอื่น', errNoFood:'ไม่พบอาหารในรูป — เพิ่มข้อมูลเอง หรือถ่ายใหม่',
+    errStorage:'พื้นที่จัดเก็บเต็ม บันทึกโดยไม่มีรูป', errGeneric:'เกิดข้อผิดพลาด',
+    langPrompt:'Thai', dateLocale:'th-TH', today:'วันนี้',
+  },
+  en: {
+    tagline:'Track calories with a photo', navToday:'Today', navAdd:'Add', navHistory:'History', navSettings:'Settings',
+    protein:'Protein (g)', carbs:'Carbs (g)', fat:'Fat (g)', todayMeals:"Today's meals",
+    meals:n=>`${n} ${n===1?'item':'items'}`, remainLeft:n=>`${n} kcal left`, remainOver:n=>`${n} kcal over goal`, goalOf:n=>`Goal ${n}`,
+    emptyToday:'No meals logged today', emptyTodaySub:'Tap “Add” to snap your first meal',
+    emptyDay:'No entries for this day',
+    snapTitle:'Snap your meal', snapSub:'AI names the dish and estimates calories',
+    gallery:'Choose photo', manual:'Add manually', analyzing:'Analyzing your meal', cancel:'Cancel',
+    resFromAI:'AI analysis', resManual:'Add a meal', addItem:'Add item', total:'Total', mealType:'Meal',
+    discard:'Discard', save:'Save', aiNote:'Calories are AI estimates — edit before saving',
+    mealNames:{breakfast:'Breakfast', lunch:'Lunch', dinner:'Dinner', snack:'Snack'},
+    itemName:'Dish name', last7:'Calories · last 7 days', goalLegend:n=>`Goal ${n} kcal`,
+    dayTotal:'Selected day (kcal)', avg7:'7-day average (kcal)',
+    aiSettings:'AI connection', keyHint:'Create a key at', model:'Model',
+    keyWarn:'Your key stays in this browser (localStorage) and is sent straight to OpenAI. Fine for personal use — never share this file with a key in it, and set a spend limit in OpenAI.',
+    goalSettings:'Daily goal', goalLabel:'Calorie goal (kcal per day)',
+    dataTitle:'Data', clearAll:'Clear all data', dataHint:'Everything is stored on this device only.',
+    confirmClear:'Delete all meal records? This cannot be undone.', confirmDel:'Delete this entry?',
+    noKeyNote:'No OpenAI API key yet — open Settings before using AI',
+    toastSaved:'Saved', toastDel:'Deleted', toastCleared:'Data cleared', toastSettings:'Settings saved',
+    errNoKey:'Add your OpenAI API key in Settings first', errAuth:'API key is invalid or expired',
+    errRate:'Quota exceeded or too many requests — try again', errNet:"Can't reach OpenAI — check your connection",
+    errTimeout:'Analysis timed out — try again', errParse:"Couldn't read the AI result — try another photo",
+    errImg:"Can't open this image — try another", errNoFood:'No food found — add it manually or retake',
+    errStorage:'Storage full — saved without photo', errGeneric:'Something went wrong',
+    langPrompt:'English', dateLocale:'en-US', today:'Today',
+  }
+};
+
+/* ---------- storage ---------- */
+const K_MEALS='mcal.meals', K_SET='mcal.settings';
+const safeGet = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } };
+const safeSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } };
+let settings = Object.assign({apiKey:'', goal:2000, lang:'th', model:'gpt-4o-mini'}, safeGet(K_SET, {}));
+let meals = safeGet(K_MEALS, []);
+if (!Array.isArray(meals)) meals = [];
+const saveSettings = () => safeSet(K_SET, settings);
+
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const t = (k, ...a) => { const v = I18N[settings.lang][k]; return typeof v === 'function' ? v(...a) : v; };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayStr = () => ymd(new Date());
+const fromYmd = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const addDays = (s, n) => { const d = fromYmd(s); d.setDate(d.getDate()+n); return ymd(d); };
+const num = v => { const n = parseFloat(v); return Number.isFinite(n) && n > 0 ? Math.round(n) : 0; };
+const MEAL_EMOJI = {breakfast:'🍳', lunch:'🍜', dinner:'🍽️', snack:'🍪'};
+const guessMeal = () => { const h = new Date().getHours(); return h<10 ? 'breakfast' : h<15 ? 'lunch' : h<18 ? 'snack' : 'dinner'; };
+const fmtDate = (s, opts) => fromYmd(s).toLocaleDateString(t('dateLocale'), opts);
+const sum = (arr, f) => arr.reduce((a, m) => a + (Number(f(m)) || 0), 0);
+const mealsOn = d => meals.filter(m => m.date === d);
+
+let toastTimer;
+function toast(msg, isErr) {
+  const el = $('#toast');
+  el.textContent = msg; el.classList.toggle('err', !!isErr); el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), isErr ? 4200 : 2200);
+}
+
+/* ---------- i18n apply ---------- */
+function applyI18n() {
+  document.documentElement.lang = settings.lang;
+  $$('[data-i18n]').forEach(el => { const v = I18N[settings.lang][el.dataset.i18n]; if (typeof v === 'string') el.textContent = v; });
+  $('#langBtn').textContent = settings.lang === 'th' ? 'TH' : 'EN';
+}
+
+/* ---------- navigation ---------- */
+let currentView = 'today';
+function go(view) {
+  currentView = view;
+  $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
+  $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.view === view));
+  window.scrollTo({top:0});
+  if (view === 'today') renderToday();
+  if (view === 'history') renderHistory();
+  if (view === 'add') { if (stage === 'pick') resetAdd(); updateKeyNote(); }
+  if (view === 'settings') fillSettings();
+}
+$('#nav').addEventListener('click', e => { const b = e.target.closest('button[data-view]'); if (b) go(b.dataset.view); });
+
+/* ---------- today ---------- */
+const CIRC = 2 * Math.PI * 86;
+function mealCard(m, i) {
+  const thumb = m.thumb ? `style="background-image:url('${m.thumb}')"` : '';
+  const emoji = m.thumb ? '' : (MEAL_EMOJI[m.meal] || '🍽️');
+  const sub = (m.items && m.items.length > 1) ? `<div class="meal-items">${esc(m.items.map(x => `${x.name} ${x.calories}`).join(' · '))}</div>` : '';
+  return `<div class="meal" style="animation-delay:${i*50}ms">
+    <div class="thumb" ${thumb}>${emoji}</div>
+    <div class="meal-body"><div class="meal-name">${esc(m.name)}</div>
+      <div class="meal-meta">${esc(t('mealNames')[m.meal] || '')} · ${esc(m.time || '')}</div>${sub}</div>
+    <div class="kcal"><b>${m.calories}</b><small>kcal</small></div>
+    <button class="del" data-del="${esc(m.id)}" aria-label="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
+  </div>`;
+}
+function renderToday() {
+  const d = todayStr(), list = mealsOn(d);
+  const total = sum(list, m => m.calories), goal = settings.goal;
+  $('#todayDate').textContent = fromYmd(d).toLocaleDateString(t('dateLocale'), {weekday:'long', day:'numeric', month:'long'});
+  $('#ringNum').textContent = total.toLocaleString();
+  $('#ringGoal').textContent = t('goalOf', goal.toLocaleString());
+  const pct = Math.min(total / goal, 1);
+  const fg = $('#ringFg');
+  fg.classList.toggle('over', total > goal);
+  requestAnimationFrame(() => { fg.style.strokeDashoffset = CIRC * (1 - pct); });
+  $('#remain').textContent = total > goal ? t('remainOver', (total - goal).toLocaleString()) : t('remainLeft', (goal - total).toLocaleString());
+  $('#mP').textContent = Math.round(sum(list, m => m.protein));
+  $('#mC').textContent = Math.round(sum(list, m => m.carbs));
+  $('#mF').textContent = Math.round(sum(list, m => m.fat));
+  $('#mealCount').textContent = t('meals', list.length);
+  $('#todayList').innerHTML = list.length
+    ? list.slice().reverse().map(mealCard).join('')
+    : `<div class="card empty"><div class="big">🥗</div><b>${esc(t('emptyToday'))}</b><div style="font-size:13px;margin-top:4px">${esc(t('emptyTodaySub'))}</div></div>`;
+}
+function deleteMeal(id) {
+  if (!confirm(t('confirmDel'))) return;
+  meals = meals.filter(m => m.id !== id); safeSet(K_MEALS, meals);
+  toast(t('toastDel')); renderToday(); if (currentView === 'history') renderHistory();
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) deleteMeal(b.dataset.del); });
+
+/* ---------- history ---------- */
+let histDate = todayStr();
+function renderHistory() {
+  const today = todayStr();
+  const days = Array.from({length:7}, (_, i) => addDays(today, i - 6));
+  const vals = days.map(d => sum(mealsOn(d), m => m.calories));
+  const goal = settings.goal, max = Math.max(goal, ...vals) * 1.12;
+  $('#chart').innerHTML = days.map((d, i) => {
+    const h = Math.max(vals[i] / max * 100, 0);
+    const wd = fromYmd(d).toLocaleDateString(t('dateLocale'), {weekday:'short'});
+    return `<div class="bar-col ${d === histDate ? 'sel' : ''}" data-day="${d}">
+      <div class="bar-area"><div class="bar-val">${vals[i] || ''}</div><div class="bar ${vals[i] > goal ? 'over' : ''}" style="height:0" data-h="${h}"></div></div>
+      <span>${esc(wd)}</span></div>`;
+  }).join('') + `<div class="goal-line" style="bottom:${24 + goal / max * 112}px"></div>`;
+  requestAnimationFrame(() => requestAnimationFrame(() => $$('#chart .bar').forEach(b => b.style.height = b.dataset.h + '%')));
+  $('#goalLegend').textContent = t('goalLegend', goal.toLocaleString());
+  $('#hAvg').textContent = Math.round(vals.reduce((a, b) => a + b, 0) / 7).toLocaleString();
+  $('#histDate').value = histDate; $('#histDate').max = today;
+  const list = mealsOn(histDate);
+  $('#hTotal').textContent = sum(list, m => m.calories).toLocaleString();
+  $('#histList').innerHTML = list.length ? list.slice().reverse().map(mealCard).join('')
+    : `<div class="card empty"><div class="big">🍃</div>${esc(t('emptyDay'))}</div>`;
+}
+$('#chart').addEventListener('click', e => { const c = e.target.closest('[data-day]'); if (c) { histDate = c.dataset.day; renderHistory(); } });
+$('#histDate').addEventListener('change', e => { if (e.target.value) { histDate = e.target.value; renderHistory(); } });
+$('#prevDay').addEventListener('click', () => { histDate = addDays(histDate, -1); renderHistory(); });
+$('#nextDay').addEventListener('click', () => { if (histDate < todayStr()) { histDate = addDays(histDate, 1); renderHistory(); } });
+
+/* ---------- add flow ---------- */
+let stage = 'pick', currentImage = null, currentThumb = null, abortCtl = null, items = [], mealType = 'lunch', macros = {p:0,c:0,f:0};
+const stages = {pick:$('#stagePick'), load:$('#stageLoad'), result:$('#stageResult')};
+function setStage(s) { stage = s; for (const k in stages) stages[k].classList.toggle('hidden', k !== s); window.scrollTo({top:0}); }
+function updateKeyNote() { $('#keyNote').textContent = settings.apiKey ? '' : t('noKeyNote'); }
+function resetAdd() { currentImage = currentThumb = null; items = []; macros = {p:0,c:0,f:0}; setStage('pick'); updateKeyNote(); }
+
+$('#camBtn').addEventListener('click', () => $('#fileCam').click());
+$('#galBtn').addEventListener('click', () => $('#fileGal').click());
+$('#manualBtn').addEventListener('click', () => { currentImage = currentThumb = null; items = [{name:'', calories:0}]; macros = {p:0,c:0,f:0}; mealType = guessMeal(); renderResult(false); });
+['#fileCam', '#fileGal'].forEach(s => $(s).addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) handleFile(f); }));
+const drop = $('#drop');
+['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('drag'); }));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('drag'); }));
+drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f && f.type.startsWith('image/')) handleFile(f); });
+
+function loadImage(file) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => { URL.revokeObjectURL(url); res(img); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('img')); };
+    img.src = url;
+  });
+}
+function scaled(img, maxSide, q) {
+  const r = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(img.naturalWidth * r)); c.height = Math.max(1, Math.round(img.naturalHeight * r));
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', q);
+}
+
+async function handleFile(file) {
+  if (!settings.apiKey) { toast(t('errNoKey'), true); go('settings'); return; }
+  let img;
+  try { img = await loadImage(file); } catch { toast(t('errImg'), true); return; }
+  currentImage = scaled(img, 1024, .82);
+  currentThumb = scaled(img, 240, .7);
+  $('#loadPreview').style.backgroundImage = `url('${currentThumb}')`;
+  setStage('load');
+  abortCtl = new AbortController();
+  try {
+    const r = await analyze(currentImage, abortCtl.signal);
+    items = r.items.map(x => ({name:x.name, calories:num(x.calories), protein:num(x.protein), carbs:num(x.carbs), fat:num(x.fat)}));
+    mealType = guessMeal();
+    if (!r.is_food || !items.length) { toast(t('errNoFood'), true); items = [{name:'', calories:0}]; }
+    renderResult(true);
+  } catch (err) {
+    if (err.name === 'AbortError' && !err.timeout) { resetAdd(); return; }
+    toast(errMsg(err), true);
+    if (err.code === 'nokey' || err.code === 401) { resetAdd(); go('settings'); } else resetAdd();
+  }
+}
+$('#cancelBtn').addEventListener('click', () => { if (abortCtl) abortCtl.abort(); resetAdd(); });
+
+function errMsg(err) {
+  if (err.code === 'nokey') return t('errNoKey');
+  if (err.code === 401) return t('errAuth');
+  if (err.code === 429) return t('errRate');
+  if (err.code === 'parse') return t('errParse');
+  if (err.timeout) return t('errTimeout');
+  if (err.code === 'net') return t('errNet');
+  return err.detail ? `${t('errGeneric')}: ${err.detail}` : t('errGeneric');
+}
+
+async function analyze(dataUrl, signal) {
+  const key = settings.apiKey.trim();
+  if (!key) throw {code:'nokey'};
+  const lang = t('langPrompt');
+  const schema = {
+    type:'object', additionalProperties:false, required:['is_food','items'],
+    properties:{
+      is_food:{type:'boolean'},
+      items:{type:'array', items:{type:'object', additionalProperties:false, required:['name','calories','protein','carbs','fat'],
+        properties:{name:{type:'string'}, calories:{type:'number'}, protein:{type:'number'}, carbs:{type:'number'}, fat:{type:'number'}}}}
+    }
+  };
+  const body = {
+    model: settings.model || 'gpt-4o-mini',
+    messages:[
+      {role:'system', content:`You are a nutrition assistant. Identify each distinct food or drink in the photo and estimate calories (kcal) and macros (grams) for the portion shown. Name each dish in ${lang}, short and specific (e.g. the common dish name). Use realistic portion sizes. If the photo has no food, set is_food=false and items=[].`},
+      {role:'user', content:[{type:'text', text:'What did I eat? Estimate calories for each item.'}, {type:'image_url', image_url:{url:dataUrl}}]}
+    ],
+    response_format:{type:'json_schema', json_schema:{name:'meal_analysis', strict:true, schema}},
+    max_completion_tokens:900
+  };
+  const timer = setTimeout(() => { abortCtl._to = true; abortCtl.abort(); }, 60000);
+  let resp;
+  try {
+    resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method:'POST', signal,
+      headers:{'Content-Type':'application/json', 'Authorization':'Bearer ' + key},
+      body: JSON.stringify(body)
+    });
+  } catch (e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') { const err = new DOMException('abort', 'AbortError'); if (abortCtl && abortCtl._to) { err.timeout = true; } throw err; }
+    throw {code:'net'};
+  }
+  clearTimeout(timer);
+  if (!resp.ok) {
+    let detail = ''; try { detail = (await resp.json()).error?.message || ''; } catch {}
+    throw {code: resp.status, detail};
+  }
+  try {
+    const data = await resp.json();
+    const out = JSON.parse(data.choices[0].message.content);
+    if (!Array.isArray(out.items)) throw 0;
+    return out;
+  } catch { throw {code:'parse'}; }
+}
+
+function renderResult(fromAI) {
+  const pv = $('#resPreview');
+  if (currentThumb) { pv.style.backgroundImage = `url('${currentImage || currentThumb}')`; pv.classList.remove('hidden'); } else pv.classList.add('hidden');
+  $('#resTitle').textContent = fromAI ? t('resFromAI') : t('resManual');
+  $('#mealSeg').innerHTML = Object.entries(t('mealNames')).map(([k, v]) => `<button data-meal="${k}" class="${k === mealType ? 'on' : ''}">${MEAL_EMOJI[k]} ${esc(v)}</button>`).join('');
+  drawRows(); setStage('result');
+}
+function drawRows() {
+  $('#itemRows').innerHTML = items.map((it, i) => `<div class="item-row">
+    <input class="field" data-f="name" data-i="${i}" value="${esc(it.name)}" placeholder="${esc(t('itemName'))}">
+    <input class="field num" data-f="calories" data-i="${i}" type="number" inputmode="numeric" min="0" value="${it.calories || ''}" placeholder="kcal">
+    <button class="del" data-rm="${i}" aria-label="Remove"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+  </div>`).join('');
+  updateTotal();
+}
+const updateTotal = () => { $('#resTotal').textContent = sum(items, x => num(x.calories)).toLocaleString(); };
+$('#itemRows').addEventListener('input', e => {
+  const i = e.target.dataset.i; if (i === undefined) return;
+  items[i][e.target.dataset.f] = e.target.dataset.f === 'name' ? e.target.value : num(e.target.value);
+  updateTotal();
+});
+$('#itemRows').addEventListener('click', e => {
+  const b = e.target.closest('[data-rm]'); if (!b) return;
+  items.splice(+b.dataset.rm, 1); if (!items.length) items.push({name:'', calories:0}); drawRows();
+});
+$('#addItemBtn').addEventListener('click', () => { items.push({name:'', calories:0}); drawRows(); const r = $$('#itemRows [data-f="name"]'); r[r.length - 1].focus(); });
+$('#mealSeg').addEventListener('click', e => {
+  const b = e.target.closest('[data-meal]'); if (!b) return;
+  mealType = b.dataset.meal; $$('#mealSeg button').forEach(x => x.classList.toggle('on', x === b));
+});
+$('#discardBtn').addEventListener('click', resetAdd);
+$('#saveBtn').addEventListener('click', () => {
+  const valid = items.filter(x => (x.name || '').trim() || x.calories);
+  const total = sum(valid, x => x.calories);
+  if (!valid.length || !total) { toast(t('errNoFood'), true); return; }
+  const now = new Date();
+  const rec = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+    date: todayStr(), time: `${pad(now.getHours())}:${pad(now.getMinutes())}`, meal: mealType,
+    name: valid.map(x => (x.name || '').trim() || '—').join(', '),
+    calories: total, protein: sum(valid, x => x.protein), carbs: sum(valid, x => x.carbs), fat: sum(valid, x => x.fat),
+    items: valid.map(x => ({name:(x.name || '').trim() || '—', calories:num(x.calories)})), thumb: currentThumb || null
+  };
+  meals.push(rec);
+  if (!safeSet(K_MEALS, meals)) {
+    rec.thumb = null;
+    if (!safeSet(K_MEALS, meals)) { meals.pop(); toast(t('errStorage'), true); return; }
+    toast(t('errStorage'), true);
+  } else toast(t('toastSaved'));
+  resetAdd(); go('today');
+});
+
+/* ---------- settings ---------- */
+function fillSettings() { $('#apiKey').value = settings.apiKey; $('#goalIn').value = settings.goal; $('#modelSel').value = settings.model; }
+$('#apiKey').addEventListener('change', e => { settings.apiKey = e.target.value.trim(); saveSettings(); updateKeyNote(); toast(t('toastSettings')); });
+$('#modelSel').addEventListener('change', e => { settings.model = e.target.value; saveSettings(); toast(t('toastSettings')); });
+$('#goalIn').addEventListener('change', e => { const g = Math.min(10000, Math.max(500, num(e.target.value) || 2000)); settings.goal = g; e.target.value = g; saveSettings(); toast(t('toastSettings')); });
+$('#eyeBtn').addEventListener('click', () => { const i = $('#apiKey'); i.type = i.type === 'password' ? 'text' : 'password'; });
+$('#clearBtn').addEventListener('click', () => { if (!confirm(t('confirmClear'))) return; meals = []; safeSet(K_MEALS, meals); toast(t('toastCleared')); });
+$('#langBtn').addEventListener('click', () => {
+  settings.lang = settings.lang === 'th' ? 'en' : 'th'; saveSettings(); applyI18n();
+  if (stage === 'result') renderResult(!!currentImage); updateKeyNote(); go(currentView);
+});
+
+/* ---------- init ---------- */
+applyI18n(); renderToday(); updateKeyNote();
+})();
+</script>
+</body>
+</html>
